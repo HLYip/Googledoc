@@ -18,19 +18,35 @@ export default function TextEditor() {
 
 
 
-const wrapperRef = useCallback((wrapper)=>{
-    if(wrapper == null) return
-    wrapper.innerHTML = ''
-    const editor = document.createElement('div')
-    wrapper.append(editor)
-    new Quill(editor, {theme: "snow", modules:{toolbar:TOOLBAR_OPTIONS}})
+// const wrapperRef = useCallback((wrapper)=>{
+//     if(wrapper == null) return
+//     wrapper.innerHTML = ''
+//     const editor = document.createElement('div')
+//     wrapper.append(editor)
+//     new Quill(editor, {theme: "snow", modules:{toolbar:TOOLBAR_OPTIONS}})
 
-},
+// },
 
-[])
+// [])
 
 
-  return (
-    <div class="container" ref={wrapperRef}> </div>
-  )
+//   return (
+//     <div class="container" ref={wrapperRef}> </div>
+//   )
+
+
+
+const containerRef = useRef(); // to store the container div
+
+  useEffect(() => {
+    
+      containerRef.current.innerHTML = ""; // clear the container div
+      const editor = document.createElement("div");
+      containerRef.current.append(editor); // append a new div to the container div
+      new Quill(editor, { theme: "snow", modules: { toolbar: TOOLBAR_OPTIONS } }); // create quill instance with the new div
+    
+  }, []); // empty dependency array to run only once on component mount
+//
+  return <div class="container" ref={containerRef}></div>; // assigning ref to the div
+  //
 }
