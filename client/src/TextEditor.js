@@ -21,7 +21,7 @@ export default function TextEditor() {
     const {id:documentId} = useParams()
     const [socket, setSocket] = useState()
     const [quill, setQuill] = useState()
-
+    const [title, setTitle] = useState('')
 
     //connect to server socket
     useEffect(()=>{
@@ -61,6 +61,22 @@ export default function TextEditor() {
        
 
     },[socket,quill, documentId])
+
+    //load title
+    useEffect(() => {
+        if (socket == null) return;
+
+        const handler = title => {
+            setTitle(title);
+        };
+
+        socket.on('load-title', handler);
+
+        return () => {
+            socket.off('load-title', handler);
+        };
+    }, [socket,title,documentId]);
+
 
 
     //socket changes
@@ -108,8 +124,21 @@ export default function TextEditor() {
 //     <div class="container" ref={wrapperRef}> </div>
 //   )
 
+//set title
+useEffect(()=>{
+    if (socket == null) return 
+    
+    console.log(title)
+    socket.emit('save-title', title)
+    
+},[socket,title])
 
 
+const updateTitle = (e) => {
+    setTitle(e.target.value);
+    socket.emit('send-title', e.target.value);
+    console.log(e.target.value)
+};
 const containerRef = useRef(); // to store the container div
 
   useEffect(() => {
@@ -124,6 +153,15 @@ const containerRef = useRef(); // to store the container div
     
   }, []); // empty dependency array to run only once on component mount
 //
-  return <div class="container" ref={containerRef}></div>; // assigning ref to the div
+  return (
+  <div>
+
+    <input type="text" value={title} onChange={updateTitle} placeholder='untitled file'/>
+  <div className="container" ref={containerRef}>
+    
+  </div>
+  </div>
+  
+  ) // assigning ref to the div
   //
 }
