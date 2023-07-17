@@ -1,11 +1,11 @@
-const mongoose = require('mongoose')
-const Document = require('./Document')
+const admin = require('firebase-admin');
+const serviceAccount = require('./keys/shareddrive-b0a0f-firebase-adminsdk-riyyg-a8cd6e9ad4.json'); 
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
-mongoose.connect('mongodb://127.0.0.1:27017/my-google-doc');
-
-
-
+const db = admin.firestore();
 const io = require('socket.io')(3001,{
     cors: {
         origin:'http://localhost:3000',
@@ -13,51 +13,63 @@ const io = require('socket.io')(3001,{
     }
 })
 
-const defaultValue =""
 
-io.on("connection",socket =>{
+
+io.on("connection", socket => {
     console.log("connected")
-    socket.on('get-document',async documentId =>{
-        //console.log("getting document")
-        const document = await findOrCreateDocument(documentId)
-        socket.join(documentId)
-        socket.emit("load-document",document.data)
-        socket.emit("load-title", document.title)
+    socket.on('get-document', async documentId => {
+        const document = await findOrCreateDocument(documentId);
+        console.log(document);
+        socket.join(documentId);
+        socket.emit("load-document", document.body);
+        socket.emit("load-title", document.title);
 
-
-
-        socket.on('send-changes', delta =>{
-            //console.log(delta)
+        socket.on('send-changes', delta => {
             socket.broadcast.to(documentId).emit("receive-changes", delta)
-        })
+        });
 
         socket.on('send-title', (title) => {
-            console.log(title)
-            socket.broadcast.to(documentId).emit('load-title', title)// broadcast title to all clients except the sender
+            console.log(title);
+            socket.broadcast.to(documentId).emit('load-title', title); // broadcast title to all clients except the sender
         });
 
-
-        socket.on("save-document", async data =>{
-            //console.log("saving")
-            await Document.findByIdAndUpdate(documentId, {data})
-            console.log("document saved")
-        })
+        socket.on("save-document", async data => {
+            let documentRef = db.collection('docs-data');
+            let snapshot = await documentRef.where('url', '==', documentId).get();
+    
+            if (!snapshot.empty) {
+                // Update the first matching document
+                await snapshot.docs[0].ref.update({ body: data });
+                console.log("document saved");
+            }
+        });
 
         socket.on('save-title', async (title) => {
-            // update the title in the database
-            console.log(title)
-            await Document.findByIdAndUpdate(documentId, { title });
-            console.log("title saved ")
+            console.log(title);
+            let documentRef = db.collection('docs-data');
+            let snapshot = await documentRef.where('url', '==', documentId).get();
+    
+            if (!snapshot.empty) {
+                // Update the first matching document
+                await snapshot.docs[0].ref.update({ title });
+                console.log("title saved");
+            }
         });
     })
+});
+
+async function findOrCreateDocument(url){
+    if (url == null) return;
+    let documentRef = db.collection('docs-data');
+    let snapshot = await documentRef.where('url', '==', url).get();
     
-   
-} )
-
-async function findOrCreateDocument(id){
-    if (id == null) return 
-    const document = await Document.findById(id)
-    if (document) return document
-    return await Document.create({_id:id, data:defaultValue, title: defaultValue})
-
+    if (!snapshot.empty) {
+        // We'll just return the first document if there are multiple matches
+        return snapshot.docs[0].data();
+    } else {
+        return null; // or handle this case appropriately
+    }
+    // await db.collection('docs-data').doc(id).set({_id:id, data:defaultValue, title: defaultValue})
+    // document = await db.collection('docs-data').doc(id).get()
+    // return document.data()
 }
