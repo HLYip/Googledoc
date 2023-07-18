@@ -1,5 +1,5 @@
 import { db,auth , storage} from '../config/firebase';
-import { collection, addDoc,getDocs,deleteDoc,doc, updateDoc } from 'firebase/firestore';
+import { query, where, collection, addDoc,getDocs,deleteDoc,doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import {ref,uploadBytes,listAll,getDownloadURL, deleteObject} from "firebase/storage"
 import {v4} from 'uuid'
 
@@ -14,6 +14,7 @@ export const addDocument = async (author, title) =>{
             title: title || "",
             url: `${v4()}`,
             body: "",
+            share:[],
             type: "ydoc"
         } )
 
@@ -26,24 +27,54 @@ export const addDocument = async (author, title) =>{
 }
 
 
-export const getDocsList = async () =>{
-
-    try{
-        const data = await getDocs(docsRef);
-    const filterData = data.docs.map((doc)=>({
+export const getDocsList = async (userEmail) => {
+    try {
+      const docsRef = collection(db, 'docs-data');
+      const data = await getDocs(docsRef);
+      let filterData = data.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id
-    }))
-    return filterData;
-
-    }catch(err){
-        console.error(err)
+      }))
+  
+      // Filter documents to only include those created by the user or shared with the user
+      filterData = filterData.filter(doc => doc.author === userEmail || (doc.share && doc.share.includes(userEmail)));
+  
+      return filterData;
+    } catch(err) {
+      console.error(err)
     }
-
-}
+  };
 
 export const deleteDocFile = async(id) =>{
 
-    const DocFile = doc(db, "docs-data",id )
-    await deleteDoc(DocFile)
+    const DocRef = doc(db, "docs-data",id )
+    await deleteDoc(DocRef)
 }
+
+export const shareDocFile = async (docId, email) => {
+    // Query the 'users' collection for a user with the entered email
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+  
+    if (!querySnapshot.empty) {
+      // User exists, share the document
+      const docRef = doc(db, "docs-data", docId);
+      try {
+        await updateDoc(docRef, {
+          share: arrayUnion(email)
+        });
+        return {
+            success: true,
+            message: "Document shared successfully",
+          };
+      } catch (error) {
+        console.error("Error sharing document:", error);
+      }
+    } else {
+        return {
+            success: false,
+            message: "The user does not exist",
+          };
+    }
+  };
