@@ -12,6 +12,7 @@ const Doc = ({doc, deleteDoc, shareDoc}) => {
        <p><button onClick={()=> deleteDoc(doc.id)} >Delete</button></p>
         
         
+        
 
     </div>
   )

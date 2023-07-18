@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./keys/shareddrive-b0a0f-firebase-adminsdk-riyyg-a8cd6e9ad4.json'); 
+const serviceAccount = require('./keys/shareddrive-b0a0f-firebase-adminsdk-e5uel-ca3870253e.json'); 
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
