@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { addDocument,getDocsList,deleteDocFile } from '../service/DocService';
+import { shareDocFile, addDocument,getDocsList,deleteDocFile } from '../service/DocService';
 import './Home.css'
 import Doc from './Doc';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const DocList = () => {
     const   [docList, setDocList] = useState([]);
@@ -13,11 +13,11 @@ const DocList = () => {
         await addDocument(userEmail,title);
         setTitle("")
         toast.success("document added1")
-        getDocs()
+        getDocs(userEmail)
     }
 
-    const getDocs = async () =>{
-        const docs = await getDocsList();
+    const getDocs = async (userEmail) =>{
+        const docs = await getDocsList(userEmail);
         setDocList(docs);
         console.log(docs)
     }
@@ -25,12 +25,28 @@ const DocList = () => {
     const deleteDoc = async(id)=>{
         await deleteDocFile(id);
         toast.success("File Deleted")
-        getDocs()
+        getDocs(userEmail)
+
+    }
+
+    const shareDoc = async(docId, email) =>{
+        try{
+        const result = await shareDocFile(docId, email); 
+        console.log(result)
+        if(result.success){
+            toast.success("file shared");
+        }else{
+            toast.error("file share failed")
+        }
+    }catch(err){
+        console.error(err);
+    }
+        
 
     }
     useEffect(()=>{
         
-        getDocs();
+        getDocs(userEmail);
 
     },[])
 
@@ -44,7 +60,7 @@ const DocList = () => {
     </div>
     <div className='doc-grid-main'>
     {docList.map((doc)=>(
-        <Doc key={doc.id} doc={doc} deleteDoc={deleteDoc}/>
+        <Doc key={doc.id} doc={doc} deleteDoc={deleteDoc} shareDoc={shareDoc}/>
 
     ))}
     </div>
