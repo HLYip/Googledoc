@@ -10,6 +10,7 @@ const Doc = ({doc, deleteDoc}) => {
        <p><button onClick={()=> deleteDoc(doc.id)} >Delete</button></p>
         
         
+        
 
     </div>
   )
