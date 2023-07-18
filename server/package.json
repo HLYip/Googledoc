@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "firebase-admin": "^11.10.1",
     "mongoose": "^7.3.2",
     "nodemon": "^3.0.1",
     "socket.io": "^4.7.1"
