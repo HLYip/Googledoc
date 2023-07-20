@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { shareDocFile, addDocument,getDocsList,deleteDocFile } from '../service/DocService';
+import React, { useEffect, useRef, useState } from 'react'
+import { uploadFile,shareDocFile, addDocument,getDocsList,deleteDocFile } from '../service/DocService';
 import './Home.css'
 import Doc from './Doc';
 import { toast } from 'react-toastify';
@@ -8,6 +8,11 @@ const DocList = () => {
     const   [docList, setDocList] = useState([]);
     const [title, setTitle] = useState("");
     const userEmail = localStorage.getItem("userEmail");
+    const [fileUpload, setFileUpload] = useState(null);
+    const fileUploadRef = useRef();
+
+
+
 
     const addDocumentHandler = async () => {
         await addDocument(userEmail,title);
@@ -22,8 +27,8 @@ const DocList = () => {
         console.log(docs)
     }
 
-    const deleteDoc = async(id)=>{
-        await deleteDocFile(id);
+    const deleteDoc = async(id,isFile,filePath)=>{
+        await deleteDocFile(id,isFile,filePath);
         toast.success("File Deleted")
         getDocs(userEmail)
 
@@ -44,6 +49,27 @@ const DocList = () => {
         
 
     }
+
+
+    const uploadFileHandler = async(author, file) =>{
+        try{
+            console.log(file)
+            const id = await uploadFile(author, file); 
+            if(id != null){
+                toast.success("File upload sucess");
+            }else{
+                toast.error("file not uploaded");
+            }
+            fileUploadRef.current.value = "";
+            getDocs(userEmail);
+
+        }catch(err){
+
+            console.error(err);
+        }
+
+
+    }
     useEffect(()=>{
         
         getDocs(userEmail);
@@ -56,11 +82,13 @@ const DocList = () => {
     
     <div style={{ display: 'flex', justifyContent: 'center',alignItems:'center' }}>
     <input value={title} className="add-title" onChange={(e)=>{setTitle(e.target.value)}} placeholder='add a title'/>
-        <button onClick={addDocumentHandler} className='add-doc'>ADD DOC</button>
+        <button onClick={addDocumentHandler} style={{ marginRight: '10px' }} className='add-doc'>ADD DOC</button>
+        <input ref={fileUploadRef} onChange={(e)=>{setFileUpload(e.target.files[0])}}  type="file"/>
+        <button onClick={()=>uploadFileHandler(userEmail,fileUpload)} className='add-file'>Upload File</button>
     </div>
     <div className='doc-grid-main'>
     {docList.map((doc)=>(
-        <Doc key={doc.id} doc={doc} deleteDoc={deleteDoc} shareDoc={shareDoc}/>
+        <Doc key={doc.id} doc={doc} deleteDoc={deleteDoc} shareDoc={shareDoc} mimeType={doc.type}/>
 
     ))}
     </div>

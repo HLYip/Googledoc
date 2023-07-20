@@ -15,7 +15,8 @@ export const addDocument = async (author, title) =>{
             url: `${v4()}`,
             body: "",
             share:[],
-            type: "ydoc"
+            type: "ydoc",
+            isFile:false
         } )
 
         
@@ -29,7 +30,6 @@ export const addDocument = async (author, title) =>{
 
 export const getDocsList = async (userEmail) => {
     try {
-      const docsRef = collection(db, 'docs-data');
       const data = await getDocs(docsRef);
       let filterData = data.docs.map((doc) => ({
         ...doc.data(),
@@ -45,9 +45,20 @@ export const getDocsList = async (userEmail) => {
     }
   };
 
-export const deleteDocFile = async(id) =>{
+  export const deleteDocFile = async (id,  isFile, filePath) => {
+    const DocRef = doc(db, "docs-data", id)
 
-    const DocRef = doc(db, "docs-data",id )
+    if (isFile && filePath) { // Check that filePath is defined
+
+        // Use the filePath from Firestore document to create a reference to the file in storage
+        const storageRef = ref(storage, filePath);
+
+        // Delete the file on storage
+        await deleteObject(storageRef);
+    
+    }
+
+    // Delete the document in Firestore
     await deleteDoc(DocRef)
 }
 
@@ -78,3 +89,28 @@ export const shareDocFile = async (docId, email) => {
           };
     }
   };
+
+  export const uploadFile = async(author,fileUpload) =>{
+    console.log(fileUpload)
+    if (!fileUpload) return;
+    
+    const filePath = `projectFiles/${fileUpload.name + v4()}`
+    const fileFolderRef = ref(storage, filePath)
+    
+    try{
+    await uploadBytes(fileFolderRef, fileUpload)
+    const url = await getDownloadURL(fileFolderRef); // getting download url of the file
+    const fileDoc = await addDoc(collection(db, 'docs-data'),
+     { 
+        author,
+        share:[],
+        url: url,
+       name:fileUpload.name,
+        filePath: filePath,
+      type: fileUpload.type,
+        isFile:true });
+    return fileDoc.id;
+    }catch(err){
+        console.error(err)
+    }
+  }
